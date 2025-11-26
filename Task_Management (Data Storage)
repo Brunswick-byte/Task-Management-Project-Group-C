@@ -1,0 +1,503 @@
+#include <iostream>
+#include <string>
+#include <limits>
+#include <vector>
+#include <iomanip>  // for setw, left
+#include <fstream>  // Added for file I/O
+#include <sstream>  // Added for string streaming
+
+// =============================
+// Task data structures
+// =============================
+
+enum class TaskStatus {
+    Pending,
+    Completed
+};
+
+struct Task {
+    int id;
+    std::string title;
+    std::string description;
+    std::string deadline;
+    TaskStatus status;
+};
+
+// Global task list
+std::vector<Task> tasks;
+int nextTaskId = 1;
+
+// Current logged-in user
+std::string currentUser;
+
+// =============================
+// Utility input functions (UI)
+// =============================
+
+int getIntInput(const std::string& prompt) {
+    int value;
+    while (true) {
+        std::cout << prompt;
+        if (std::cin >> value) {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            return value;
+        } else {
+            std::cout << "Invalid input. Please enter a number.\n";
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+    }
+}
+
+std::string getStringInput(const std::string& prompt) {
+    std::string value;
+    std::cout << prompt;
+    std::getline(std::cin, value);
+    return value;
+}
+
+void pressEnterToContinue() {
+    std::cout << "\nPress Enter to continue...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
+
+// =============================
+// Forward declarations
+// =============================
+
+// UI
+bool showLoginScreen();
+int showMainMenu();
+void handleViewTasksMenu();
+void uiAddTask();
+void uiEditTask();
+void uiDeleteTask();
+void viewTasksByStatus(int status);
+
+// Logic
+void addTask(const std::string& title,
+             const std::string& description,
+             const std::string& deadline);
+
+bool editTask(int id);
+bool deleteTask(int id);
+void printTasksByStatus(int status);
+
+// File I/O (IMPLEMENTED BY DATA MANAGEMENT)
+void loadTasksFromFile(const std::string& filename);
+void saveTasksToFile(const std::string& filename);
+bool backupTasks(const std::string& filename);
+void displayFileStats(const std::string& filename);
+
+// =============================
+// Main
+// =============================
+
+int main() {
+    const std::string FILENAME = "tasks.txt";
+    const std::string BACKUP_FILENAME = "tasks_backup.txt";
+
+    std::cout << "Loading tasks from file...\n";
+    loadTasksFromFile(FILENAME);
+
+    if (!showLoginScreen()) {
+        std::cout << "Exiting program...\n";
+        return 0;
+    }
+
+    bool running = true;
+    while (running) {
+        int choice = showMainMenu();
+        switch (choice) {
+            case 1: uiAddTask(); break;
+            case 2: handleViewTasksMenu(); break;
+            case 3: uiEditTask(); break;
+            case 4: uiDeleteTask(); break;
+            case 5: 
+                std::cout << "Logging out...\n";
+                running = false;
+                break;
+            case 6: // Added file management option
+                displayFileStats(FILENAME);
+                break;
+            default:
+                std::cout << "Invalid selection.\n";
+        }
+    }
+
+    std::cout << "Saving tasks to file...\n";
+    saveTasksToFile(FILENAME);
+    
+    // Create backup
+    if (backupTasks(BACKUP_FILENAME)) {
+        std::cout << "Backup created successfully.\n";
+    }
+
+    std::cout << "Goodbye, " << currentUser << "!\n";
+    return 0;
+}
+
+// =============================
+// UI IMPLEMENTATION
+// =============================
+
+bool showLoginScreen() {
+    std::cout << "=====================================\n";
+    std::cout << "      Task Management System\n";
+    std::cout << "=====================================\n";
+    std::cout << "1. Login\n";
+    std::cout << "2. Exit\n";
+
+    int choice = getIntInput("Enter choice: ");
+
+    if (choice == 1) {
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "\n=== Login ===\n";
+        std::cout << "Username: ";
+        std::getline(std::cin, currentUser);
+
+        if (currentUser.empty()) {
+            std::cout << "Username cannot be empty.\n";
+            return false;
+        }
+
+        std::cout << "Welcome, " << currentUser << "!\n\n";
+        return true;
+    }
+
+    return false;
+}
+
+int showMainMenu() {
+    std::cout << "\n=====================================\n";
+    std::cout << "Logged in as: " << currentUser << "\n";
+    std::cout << "=====================================\n";
+    std::cout << "1. Add Task\n";
+    std::cout << "2. View Tasks\n";
+    std::cout << "3. Edit Task\n";
+    std::cout << "4. Delete Task\n";
+    std::cout << "5. Logout / Exit\n";
+    std::cout << "6. File Statistics\n"; // Added option
+
+    return getIntInput("Enter your choice: ");
+}
+
+void handleViewTasksMenu() {
+    std::cout << "\n=== View Tasks ===\n";
+    std::cout << "1. View all\n";
+    std::cout << "2. View pending\n";
+    std::cout << "3. View completed\n";
+
+    int choice = getIntInput("Select option: ");
+
+    switch (choice) {
+        case 1: viewTasksByStatus(0); break;
+        case 2: viewTasksByStatus(1); break;
+        case 3: viewTasksByStatus(2); break;
+        default: std::cout << "Invalid option.\n";
+    }
+
+    pressEnterToContinue();
+}
+
+void uiAddTask() {
+    std::cout << "\n=== Add Task ===\n";
+
+    std::string title = getStringInput("Title: ");
+    std::string desc = getStringInput("Description: ");
+    std::string deadline = getStringInput("Deadline (DD/MM/YYYY): ");
+
+    addTask(title, desc, deadline);
+
+    std::cout << "Task added successfully.\n";
+    pressEnterToContinue();
+}
+
+void uiEditTask() {
+    std::cout << "\n=== Edit Task ===\n";
+    int id = getIntInput("Enter task ID: ");
+
+    if (!editTask(id)) {
+        std::cout << "Task not found.\n";
+    }
+
+    pressEnterToContinue();
+}
+
+void uiDeleteTask() {
+    std::cout << "\n=== Delete Task ===\n";
+    int id = getIntInput("Task ID to delete: ");
+
+    std::cout << "Are you sure? (Y/N): ";
+    char c;
+    std::cin >> c;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    if (c == 'Y' || c == 'y') {
+        if (deleteTask(id))
+            std::cout << "Task deleted.\n";
+        else
+            std::cout << "Task not found.\n";
+    } else {
+        std::cout << "Cancelled.\n";
+    }
+
+    pressEnterToContinue();
+}
+
+void viewTasksByStatus(int status) {
+    std::cout << "\n=== Tasks ===\n";
+    printTasksByStatus(status);
+}
+
+// =============================
+// TASK LOGIC IMPLEMENTATION
+// =============================
+
+void addTask(const std::string& title,
+             const std::string& description,
+             const std::string& deadline)
+{
+    Task t;
+    t.id = nextTaskId++;
+    t.title = title;
+    t.description = description;
+    t.deadline = deadline;
+    t.status = TaskStatus::Pending;
+
+    tasks.push_back(t);
+}
+
+bool editTask(int id) {
+    for (auto& task : tasks) {
+        if (task.id == id) {
+            std::cout << "Editing task: " << task.title << "\n";
+
+            std::string newTitle = getStringInput("New title (blank = no change): ");
+            std::string newDesc  = getStringInput("New description (blank = no change): ");
+            std::string newDeadline = getStringInput("New deadline (blank = no change): ");
+
+            std::string statusIn = getStringInput("Status (P = pending, C = completed, blank = no change): ");
+
+            if (!newTitle.empty()) task.title = newTitle;
+            if (!newDesc.empty()) task.description = newDesc;
+            if (!newDeadline.empty()) task.deadline = newDeadline;
+
+            if (!statusIn.empty()) {
+                char c = std::toupper(statusIn[0]);
+                if (c == 'P') task.status = TaskStatus::Pending;
+                else if (c == 'C') task.status = TaskStatus::Completed;
+            }
+
+            std::cout << "Updated.\n";
+            return true;
+        }
+    }
+    return false;
+}
+
+bool deleteTask(int id) {
+    for (auto it = tasks.begin(); it != tasks.end(); ++it) {
+        if (it->id == id) {
+            tasks.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+void printTasksByStatus(int status) {
+    if (tasks.empty()) {
+        std::cout << "No tasks available.\n";
+        return;
+    }
+
+    std::cout << std::left
+              << std::setw(5) << "ID"
+              << std::setw(20) << "Title"
+              << std::setw(15) << "Deadline"
+              << std::setw(12) << "Status"
+              << "Description\n";
+
+    std::cout << std::string(70, '-') << "\n";
+
+    bool printed = false;
+
+    for (const auto& task : tasks) {
+        bool match =
+            (status == 0) ||
+            (status == 1 && task.status == TaskStatus::Pending) ||
+            (status == 2 && task.status == TaskStatus::Completed);
+
+        if (!match) continue;
+
+        printed = true;
+
+        std::cout << std::left
+                  << std::setw(5) << task.id
+                  << std::setw(20) << task.title.substr(0, 18)
+                  << std::setw(15) << task.deadline
+                  << std::setw(12) << (task.status == TaskStatus::Pending ? "Pending" : "Completed")
+                  << task.description << "\n";
+    }
+
+    if (!printed)
+        std::cout << "No tasks match this filter.\n";
+}
+
+// =============================
+// FILE I/O IMPLEMENTATION (DATA MANAGEMENT ROLE)
+// =============================
+
+void loadTasksFromFile(const std::string& filename) {
+    std::ifstream inFile(filename);
+    
+    if (!inFile.is_open()) {
+        std::cout << "No existing task file found. Starting with empty task list.\n";
+        return;
+    }
+
+    std::cout << "Loading tasks from " << filename << "...\n";
+    
+    Task task;
+    std::string line;
+    int tasksLoaded = 0;
+    
+    // Read file line by line
+    while (std::getline(inFile, line)) {
+        if (line.empty()) continue;
+        
+        std::stringstream ss(line);
+        std::string token;
+        std::vector<std::string> tokens;
+        
+        // Tokenize the line using | as delimiter
+        while (std::getline(ss, token, '|')) {
+            tokens.push_back(token);
+        }
+        
+        // Expecting format: id|title|description|deadline|status
+        if (tokens.size() >= 5) {
+            task.id = std::stoi(tokens[0]);
+            task.title = tokens[1];
+            task.description = tokens[2];
+            task.deadline = tokens[3];
+            
+            // Convert status string to enum
+            if (tokens[4] == "Completed") {
+                task.status = TaskStatus::Completed;
+            } else {
+                task.status = TaskStatus::Pending;
+            }
+            
+            tasks.push_back(task);
+            tasksLoaded++;
+            
+            // Update nextTaskId to be higher than any loaded ID
+            if (task.id >= nextTaskId) {
+                nextTaskId = task.id + 1;
+            }
+        }
+    }
+    
+    inFile.close();
+    std::cout << "Successfully loaded " << tasksLoaded << " tasks.\n";
+}
+
+void saveTasksToFile(const std::string& filename) {
+    std::ofstream outFile(filename, std::ios::trunc); // Overwrite existing file
+    
+    if (!outFile.is_open()) {
+        std::cout << "Error: Could not open file " << filename << " for writing.\n";
+        return;
+    }
+    
+    std::cout << "Saving " << tasks.size() << " tasks to " << filename << "...\n";
+    
+    for (const auto& task : tasks) {
+        outFile << task.id << "|"
+                << task.title << "|"
+                << task.description << "|"
+                << task.deadline << "|"
+                << (task.status == TaskStatus::Completed ? "Completed" : "Pending")
+                << "\n";
+    }
+    
+    outFile.close();
+    
+    if (outFile.fail()) {
+        std::cout << "Error: Failed to write to file.\n";
+    } else {
+        std::cout << "Tasks saved successfully.\n";
+    }
+}
+
+bool backupTasks(const std::string& filename) {
+    std::ofstream backupFile(filename);
+    
+    if (!backupFile.is_open()) {
+        std::cout << "Error: Could not create backup file.\n";
+        return false;
+    }
+    
+    // Add backup header with timestamp
+    backupFile << "# Task Management System Backup\n";
+    backupFile << "# Generated by: " << currentUser << "\n";
+    backupFile << "# Total tasks: " << tasks.size() << "\n";
+    backupFile << "=================================\n";
+    
+    for (const auto& task : tasks) {
+        backupFile << "ID: " << task.id << "\n";
+        backupFile << "Title: " << task.title << "\n";
+        backupFile << "Description: " << task.description << "\n";
+        backupFile << "Deadline: " << task.deadline << "\n";
+        backupFile << "Status: " << (task.status == TaskStatus::Completed ? "Completed" : "Pending") << "\n";
+        backupFile << "---------------------------------\n";
+    }
+    
+    backupFile.close();
+    return true;
+}
+
+void displayFileStats(const std::string& filename) {
+    std::cout << "\n=== File Statistics ===\n";
+    std::cout << "Total tasks in memory: " << tasks.size() << "\n";
+    
+    std::ifstream inFile(filename);
+    if (!inFile.is_open()) {
+        std::cout << "No task file exists yet.\n";
+        return;
+    }
+    
+    // Count lines in file
+    int lineCount = 0;
+    std::string line;
+    while (std::getline(inFile, line)) {
+        if (!line.empty()) {
+            lineCount++;
+        }
+    }
+    inFile.close();
+    
+    std::cout << "Tasks in file: " << lineCount << "\n";
+    
+    // Calculate completion statistics
+    int completed = 0, pending = 0;
+    for (const auto& task : tasks) {
+        if (task.status == TaskStatus::Completed) {
+            completed++;
+        } else {
+            pending++;
+        }
+    }
+    
+    std::cout << "Completed tasks: " << completed << "\n";
+    std::cout << "Pending tasks: " << pending << "\n";
+    
+    if (!tasks.empty()) {
+        double completionRate = (static_cast<double>(completed) / tasks.size()) * 100;
+        std::cout << "Completion rate: " << std::fixed << std::setprecision(1) << completionRate << "%\n";
+    }
+    
+    pressEnterToContinue();
+}
