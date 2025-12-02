@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include "TaskManager.h"
+#include "TaskID.h"
+
 using namespace std;
 
 int main(){
@@ -28,19 +30,51 @@ int main(){
     cout << "\nWelcome, " << username << "!\n";
 
 
-    // Choice to add task
-    cout << "\n";
-    cout << "\n1) Add Task\n";
+    // Main menu
+    TaskManager tm(username, password);
+    tm.mainMenu();
     cout << "0) Exit\n";
     cout << "Your choice: ";
     cin >> choice;
     if(choice == 0) return 0;
-    
-    if(choice != 1) {
-        cout << "\nInvalid choice. Exiting Task Manager. Goodbye!\n";
+    else if (choice == 1) {
+        cout << "\n===========================\n";
+        cout << "Redirecting to Add Task...\n";
+        cout << "===========================\n";
+        
+    } else if(choice == 2) {
+        cout << "\n===========================\n";
+        cout << "Redirecting to View Tasks...\n";
+        cout << "===========================\n";
+        TaskManager tm(username, password);
+        tm.viewTasks();
+        return 0;
+    } else if(choice == 3) {
+        int editID;
+        cout << "\n===========================\n";
+        cout << "Enter Task ID to edit: ";
+        cin >> editID;
+        cout << "Redirecting to Edit Task...\n";
+        cout << "===========================\n";
+        TaskManager tm(username, password);
+        tm.editTask(editID);
+        return 0;
+    } else if(choice == 4) {
+        int deleteID;
+        cout << "\n===========================\n";
+        cout << "Enter Task ID to delete: ";
+        cin >> deleteID;
+        cout << "Redirecting to Delete Task...\n";
+        cout << "===========================\n";
+        TaskManager tm(username, password);
+        tm.deleteTask(deleteID);
+        return 0;
+    } else {
+        cout << "Invalid choice. Exiting.\n";
         return 0;
     }
-
+        
+    
     // Add Task
     cout << "\n===========================\n";
     cout << "----- Create New Task -----\n";
@@ -57,6 +91,7 @@ int main(){
     // Post-creation menu
     cout << "\nWhat would you like to do?\n";
     cout << "1) Edit This Task\n";
+    cout << "2) Return to Main Menu\n";
     cout << "0) Exit\n";
     cout << "Your choice: ";
     cin >> choice;
@@ -66,6 +101,13 @@ int main(){
         cout << "Redirecting to Edit Task...\n";
         cout << "===========================\n";
         editTask(title, description, assignedTo, status, dueDayDate, dueMonthDate, dueYearDate, priority);
+    } else if(choice == 2) {
+        cout << "\n===========================\n";
+        cout << "Returning to Main Menu...\n";
+        cout << "===========================\n";
+
+    } else {
+        cout << "Exiting...\n";
     }
     
     return 0;    
