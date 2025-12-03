@@ -7,6 +7,7 @@
 
 using namespace std;
 
+// TaskID class represents a single task
 class TaskID {
 public:
     int taskID;
@@ -23,6 +24,7 @@ public:
     int priorityLow;
     string ownerUsername;
 
+    // Default constructor initialises task fields
     TaskID() {
         taskID = 0;
         title = "";
@@ -35,6 +37,7 @@ public:
         ownerUsername = "";
     }
 
+    // Setters for task fields
     void setTitle(string t) { title = t; }
     void setDescription(string d) { description = d; }
     void setStatus(int s) { status = s; }
@@ -50,6 +53,7 @@ public:
         priorityLow = pL;
     }
 
+    // Getters for task fields
     string getTitle() { return title; }
     string getDescription() { return description; }
     int getStatus() { return status; }
@@ -60,6 +64,7 @@ public:
     string getPriority() { return priority; }
     string getOwner() { return ownerUsername; }
 
+    // Write task data to file
     void serialize(ofstream& out) {
         out << taskID << endl;
         out << title << endl;
@@ -76,6 +81,7 @@ public:
         out << ownerUsername << endl;
     }
 
+    // Read task data from file
     void deserialize(ifstream& in) {
         in >> taskID;
         in.ignore();
@@ -93,6 +99,7 @@ public:
     }
 };
 
+// Output operator to print task details in a formatted way
 inline ostream& operator<<(ostream& os, const TaskID& t) {
     string statusText;
     switch (t.status) {
