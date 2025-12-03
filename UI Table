@@ -1,0 +1,28 @@
+for (int i = 0; i < taskCount; i++) {
+        string statusText;
+        switch (tasks[i].status) {
+            case 1: statusText = "Pending";     break;
+            case 2: statusText = "In Progress"; break;
+            case 3: statusText = "Completed";   break;
+            default: statusText = "Unknown";    break;
+        }
+
+        string dueDate = to_string(tasks[i].dueDayDate) + "/" +
+                         to_string(tasks[i].dueMonthDate) + "/" +
+                         to_string(tasks[i].dueYearDate);
+
+        cout << left
+             << setw(5)  << tasks[i].taskID
+             << setw(20) << tasks[i].title
+             << setw(15) << statusText
+             << setw(15) << dueDate
+             << setw(15) << tasks[i].assignedTo
+             << setw(10) << tasks[i].priority
+             << '\n';
+    }
+
+    cout << "===================================================\n";
+    cout << "\nPress Enter to return";
+    cin.ignore();
+    cin.get();
+}
