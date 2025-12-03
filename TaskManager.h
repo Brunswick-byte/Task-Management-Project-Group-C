@@ -9,6 +9,7 @@ using namespace std;
 
 #include "TaskID.h"
 
+// Input helper function prototypes
 bool getTitle(string& title);
 bool getDescription(string& description);
 bool getAssignedTo(string& assignedTo);
@@ -22,6 +23,7 @@ bool createTask(string& title, string& description, string& assignedTo,
 bool editTask(string& title, string& description, string& assignedTo,
               int& status, int& day, int& month, int& year, int& priority);
 
+// TaskManager class controls all task operations for one user
 class TaskManager {
 private:
     string username;
@@ -31,26 +33,31 @@ private:
     int taskCount = 0;
 
 public:
+    // Constructor sets user credentials and loads their tasks
     TaskManager(string u, string p) {
         username = u;
         password = p;
         loadTasks();
     }
 
+    // Destructor saves tasks automatically
     ~TaskManager() {
         saveTasks();
     }
 
+    // Simple signup method (stores username and password)
     bool signup(string u, string p) {
         username = u;
         password = p;
         return true;
     }
     
+    // Simple login check against stored username/password
     bool login(string u, string p) {
         return (username == u && password == p);
     }
 
+    // Save all tasks for this user to username_tasks.txt
     void saveTasks() {
         string filename = username + "_tasks.txt";
         ofstream outFile(filename);
@@ -70,6 +77,7 @@ public:
         outFile.close();
     }
 
+    // Load all tasks for this user from username_tasks.txt
     void loadTasks() {
         string filename = username + "_tasks.txt";
         ifstream inFile(filename);
@@ -89,6 +97,7 @@ public:
         inFile.close();
     }
 
+    // Main menu loop for task operations
     void mainMenu() {
         int choice;
         while (true) {
@@ -109,6 +118,7 @@ public:
             cin >> choice;
 
             if (choice == 0) {
+                // Logout and autosave
                 saveTasks();
                 cout << "\n===========================\n";
                 cout << "Logging out...\n";
@@ -116,30 +126,36 @@ public:
                 break;
             }
             else if (choice == 1) {
+                // Add new task
                 addTaskMenu();
             }
             else if (choice == 2) {
+                // View existing tasks
                 viewTasks();
             }
             else if (choice == 3) {
+                // Edit selected task by ID
                 int editID;
                 cout << "\nEnter Task ID to edit: ";
                 cin >> editID;
                 editTask(editID);
             }
             else if (choice == 4) {
+                // Delete selected task by ID
                 int deleteID;
                 cout << "\nEnter Task ID to delete: ";
                 cin >> deleteID;
                 deleteTask(deleteID);
             }
             else if (choice == 5) {
+                // Manual save to file
                 saveTasks();
                 cout << "\n===================================\n";
                 cout << "Tasks saved successfully!\n";
                 cout << "===================================\n";
             }
             else {
+                // Invalid menu choice
                 cout << "\n===========================\n";
                 cout << "Invalid choice. Please try again.\n";
                 cout << "===========================\n";
@@ -147,6 +163,7 @@ public:
         }
     }
 
+    // Menu to collect details and create a new task
     void addTaskMenu() {
         cout << "\n========================================\n";
         cout << "               ADD NEW TASK             \n";
@@ -200,6 +217,7 @@ public:
         addTask(newTask);
     }
 
+    // Add a task object to the internal array
     void addTask(const TaskID& t) {
         if (taskCount >= MAX_TASKS) {
             cout << "\n=============================\n";
@@ -218,9 +236,11 @@ public:
         cout << "=============================\n";
     }
 
+    // Edit an existing task by ID
     void editTask(int id) {
         for (int i = 0; i < taskCount; i++) {
             if (tasks[i].taskID == id) {
+                // Only allow editing own tasks
                 if (tasks[i].getOwner() != username) {
                     cout << "\n===================================\n";
                     cout << "ERROR: You can only edit your own tasks!\n";
@@ -340,6 +360,7 @@ public:
         cout << "===========================\n";
     }
 
+    // Delete a task by ID
     void deleteTask(int id) {
         cout << "\n========================================\n";
         cout << "               DELETE TASK              \n";
@@ -349,6 +370,7 @@ public:
 
         for (int i = 0; i < taskCount; i++) {
             if (tasks[i].taskID == id) {
+                // Only allow deleting own tasks
                 if (tasks[i].getOwner() != username) {
                     cout << "\n===================================\n";
                     cout << "ERROR: You can only delete your own tasks!\n";
@@ -373,6 +395,7 @@ public:
         cout << "===========================\n";
     }
 
+    // View tasks with different filter options
     void viewTasks() {
         if (taskCount == 0) {
             cout << "\n===========================\n";
@@ -405,6 +428,7 @@ public:
                 return;
 
             case 1: {
+                // View all tasks in table format
                 cout << "\n================================== TASK LIST ===================================\n\n";
                 cout << left
                      << setw(5)  << "ID"
@@ -445,6 +469,7 @@ public:
             }
 
             case 2: {
+                // Filter tasks by priority
                 int priorityChoice;
                 cout << "Select Priority to filter:\n";
                 cout << "1) High\n";
@@ -481,6 +506,7 @@ public:
             }
 
             case 3: {
+                // Filter tasks by status
                 int statusFilter;
                 cout << "Enter Status to filter:\n";
                 cout << "1) Pending\n";
@@ -510,6 +536,7 @@ public:
             }
 
             case 4: {
+                // Filter tasks by assigned user
                 string userFilter;
                 cout << "Enter Assigned User to filter: ";
                 getline(cin, userFilter);
@@ -532,6 +559,7 @@ public:
             }
 
             case 5: {
+                // Filter tasks by deadline date
                 int day, month, year;
                 char slash;
                 cout << "Enter Deadline to filter (DD/MM/YYYY): ";
@@ -559,12 +587,16 @@ public:
             }
 
             default:
+                // Invalid view option
                 cout << "Invalid choice. Returning to main menu.\n";
                 break;
         }
     }
 };
 
+// Below are helper functions for reading task input from the user
+
+// Get task title from user
 inline bool getTitle(string& title) {
     cout << "\nEnter Task Title: ";
     getline(cin, title);
@@ -572,6 +604,7 @@ inline bool getTitle(string& title) {
     return true;
 }
 
+// Get task description from user
 inline bool getDescription(string& description) {
     cout << "\nEnter Task Description: ";
     getline(cin, description);
@@ -579,6 +612,7 @@ inline bool getDescription(string& description) {
     return true;
 }
 
+// Get person assigned to task
 inline bool getAssignedTo(string& assignedTo) {
     cout << "\nEnter Assigned To: ";
     getline(cin, assignedTo);
@@ -586,6 +620,7 @@ inline bool getAssignedTo(string& assignedTo) {
     return true;
 }
 
+// Get task status choice
 inline bool getStatus(int& status) {
     while(true) {
         cout << "\nEnter Task Status: \n";
@@ -605,6 +640,7 @@ inline bool getStatus(int& status) {
     }
 }
 
+// Get a valid due date from user
 inline bool getValidDate(int& day, int& month, int& year) {
     char slash;
     
@@ -658,6 +694,7 @@ inline bool getValidDate(int& day, int& month, int& year) {
     }   
 }
 
+// Get priority choice from user
 inline bool getPriority(int& priority) {
     while(true) {
         cout << "\nEnter Priority: \n";
@@ -677,6 +714,7 @@ inline bool getPriority(int& priority) {
     }
 }
 
+// Display a summary of a task based on parameters
 inline void displayTask(const string& title, const string& description, const string& assignedTo,
                  int status, int day, int month, int year, int priority) {
     cout << "\n=====================================\n";
@@ -697,6 +735,7 @@ inline void displayTask(const string& title, const string& description, const st
     cout << "\n===================================\n";
 }
 
+// Helper to create a task by repeatedly prompting the user
 inline bool createTask(string& title, string& description, string& assignedTo,
                 int& status, int& day, int& month, int& year, int& priority) {
     cin.ignore();
@@ -729,6 +768,7 @@ inline bool createTask(string& title, string& description, string& assignedTo,
     return true;
 }
 
+// Helper to edit fields of an existing task (not used by TaskManager methods)
 inline bool editTask(string& title, string& description, string& assignedTo,
               int& status, int& day, int& month, int& year, int& priority) {
     while(true) {
