@@ -1,29 +1,44 @@
+#ifndef TASKMANAGER_H
+#define TASKMANAGER_H
+
 #include <iostream>
 #include <string>
+#include <iomanip>
+#include <fstream>
 using namespace std;
 
 #include "TaskID.h"
 
-// Forward declarations of utility functions
 bool getTitle(string& title);
 bool getDescription(string& description);
 bool getAssignedTo(string& assignedTo);
 bool getStatus(int& status);
 bool getValidDate(int& day, int& month, int& year);
 bool getPriority(int& priority);
-    
+void displayTask(const string& title, const string& description, const string& assignedTo,
+                 int status, int day, int month, int year, int priority);
+bool createTask(string& title, string& description, string& assignedTo,
+                int& status, int& day, int& month, int& year, int& priority);
+bool editTask(string& title, string& description, string& assignedTo,
+              int& status, int& day, int& month, int& year, int& priority);
+
 class TaskManager {
 private:
     string username;
     string password;
-
-    TaskID tasks[100];
+    static const int MAX_TASKS = 100;
+    TaskID tasks[MAX_TASKS];
     int taskCount = 0;
 
 public:
     TaskManager(string u, string p) {
         username = u;
         password = p;
+        loadTasks();
+    }
+
+    ~TaskManager() {
+        saveTasks();
     }
 
     bool signup(string u, string p) {
@@ -31,104 +46,162 @@ public:
         password = p;
         return true;
     }
+    
     bool login(string u, string p) {
         return (username == u && password == p);
     }
 
-    // Main menu
+    void saveTasks() {
+        string filename = username + "_tasks.txt";
+        ofstream outFile(filename);
+        
+        if (!outFile) {
+            cout << "\n===================================\n";
+            cout << "Error: Could not save tasks to file!\n";
+            cout << "===================================\n";
+            return;
+        }
+        
+        outFile << taskCount << endl;
+        for (int i = 0; i < taskCount; i++) {
+            tasks[i].serialize(outFile);
+        }
+        
+        outFile.close();
+    }
+
+    void loadTasks() {
+        string filename = username + "_tasks.txt";
+        ifstream inFile(filename);
+        
+        if (!inFile) {
+            taskCount = 0;
+            return;
+        }
+        
+        inFile >> taskCount;
+        inFile.ignore();
+        
+        for (int i = 0; i < taskCount && i < MAX_TASKS; i++) {
+            tasks[i].deserialize(inFile);
+        }
+        
+        inFile.close();
+    }
+
     void mainMenu() {
         int choice;
         while (true) {
-            cout << "\n1) Add Task\n";
-            cout << "2) View Tasks\n";
-            cout << "3) Edit Task\n";
-            cout << "4) Delete Task\n";
-            cout << "0) Logout\n";
+            cout << "\n========================================\n";
+            cout << "        TASK MANAGER - MAIN MENU        \n";
+            cout << "========================================\n";
+            cout << "Logged in as: " << username << "\n";
+            cout << "Task Count: " << taskCount << "\n";
+            cout << "----------------------------------------\n";
+            cout << " 1) Add Task\n";
+            cout << " 2) View Tasks\n";
+            cout << " 3) Edit Task\n";
+            cout << " 4) Delete Task\n";
+            cout << " 5) Save Tasks (Manual Save)\n";
+            cout << " 0) Logout\n";
+            cout << "----------------------------------------\n";
             cout << "Your choice: ";
             cin >> choice;
 
             if (choice == 0) {
+                saveTasks();
                 cout << "\n===========================\n";
                 cout << "Logging out...\n";
                 cout << "===========================\n";
                 break;
             }
             else if (choice == 1) {
-                TaskID newTask;
-                string title, description, assignedTo;
-                int status, day, month, year, priority;
-                
-                cin.ignore();
-                
-                // Get title
-                if(!getTitle(title)) continue;
-                
-                // Get description
-                if(!getDescription(description)) continue;
-                
-                // Get assigned to
-                if(!getAssignedTo(assignedTo)) continue;
-                
-                // Get status
-                if(!getStatus(status)) {
-                    cin.ignore();
-                    continue;
-                }
-                
-                // Get date
-                if(!getValidDate(day, month, year)) {
-                    cin.clear();
-                    cin.ignore(10000, '\n');
-                    continue;
-                }
-                
-                // Get priority
-                if(!getPriority(priority)) {
-                    cin.ignore();
-                    continue;
-                }
-                
-                // Populate TaskID object
-                newTask.setTitle(title);
-                newTask.setDescription(description);
-                newTask.setAssignedTo(assignedTo);
-                newTask.setStatus(status);
-                newTask.setDueDay(day);
-                newTask.setDueMonth(month);
-                newTask.setDueYear(year);
-                
-                // Set priority string based on priority value
-                string priorityStr;
-                if(priority == 1) priorityStr = "High";
-                else if(priority == 2) priorityStr = "Mid";
-                else if(priority == 3) priorityStr = "Low";
-                newTask.setPriority(priorityStr, priority == 1 ? 1 : 0, priority == 2 ? 1 : 0, priority == 3 ? 1 : 0);
-                
-                addTask(newTask);
+                addTaskMenu();
             }
             else if (choice == 2) {
                 viewTasks();
             }
             else if (choice == 3) {
                 int editID;
-                cout << "Enter Task ID to edit: ";
+                cout << "\nEnter Task ID to edit: ";
                 cin >> editID;
                 editTask(editID);
             }
             else if (choice == 4) {
                 int deleteID;
-                cout << "Enter Task ID to delete: ";
+                cout << "\nEnter Task ID to delete: ";
                 cin >> deleteID;
                 deleteTask(deleteID);
             }
+            else if (choice == 5) {
+                saveTasks();
+                cout << "\n===================================\n";
+                cout << "Tasks saved successfully!\n";
+                cout << "===================================\n";
+            }
             else {
+                cout << "\n===========================\n";
                 cout << "Invalid choice. Please try again.\n";
+                cout << "===========================\n";
             }
         }
     }
-    // Add Task
+
+    void addTaskMenu() {
+        cout << "\n========================================\n";
+        cout << "               ADD NEW TASK             \n";
+        cout << "========================================\n";
+        cout << "Please enter the following details:\n";
+        cout << "----------------------------------------\n";
+
+        TaskID newTask;
+        string title, description, assignedTo;
+        int status, day, month, year, priority;
+        
+        cin.ignore();
+        
+        if(!getTitle(title)) return;
+        if(!getDescription(description)) return;
+        if(!getAssignedTo(assignedTo)) return;
+        if(!getStatus(status)) {
+            cin.ignore();
+            return;
+        }
+        if(!getValidDate(day, month, year)) {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            return;
+        }
+        if(!getPriority(priority)) {
+            cin.ignore();
+            return;
+        }
+        
+        newTask.setTitle(title);
+        newTask.setDescription(description);
+        newTask.setAssignedTo(assignedTo);
+        newTask.setStatus(status);
+        newTask.setDueDay(day);
+        newTask.setDueMonth(month);
+        newTask.setDueYear(year);
+        newTask.setOwner(username);
+        
+        string priorityStr;
+        if(priority == 1)      priorityStr = "High";
+        else if(priority == 2) priorityStr = "Mid";
+        else if(priority == 3) priorityStr = "Low";
+        newTask.setPriority(
+            priorityStr,
+            priority == 1 ? 1 : 0,
+            priority == 2 ? 1 : 0,
+            priority == 3 ? 1 : 0
+        );
+        
+        addTask(newTask);
+    }
+
     void addTask(const TaskID& t) {
-        if (taskCount >= 100) {
+        if (taskCount >= MAX_TASKS) {
             cout << "\n=============================\n";
             cout << "Task list full!\n";
             cout << "=============================\n";
@@ -141,16 +214,27 @@ public:
 
         cout << "\n=============================\n";
         cout << "Task added successfully!\n";
+        cout << "Task ID: " << tasks[taskCount-1].taskID << "\n";
         cout << "=============================\n";
     }
 
-    // Edit Task
     void editTask(int id) {
         for (int i = 0; i < taskCount; i++) {
             if (tasks[i].taskID == id) {
-                cout << "\n===========================\n";
-                cout << "\nEditing Task ID: " << id << endl;
-                cout << "===========================\n";
+                if (tasks[i].getOwner() != username) {
+                    cout << "\n===================================\n";
+                    cout << "ERROR: You can only edit your own tasks!\n";
+                    cout << "===================================\n";
+                    return;
+                }
+                
+                cout << "\n========================================\n";
+                cout << "                 EDIT TASK              \n";
+                cout << "========================================\n";
+                cout << "Task ID: " << id << "\n";
+                cout << "Current Task Details:\n";
+                cout << tasks[i];
+                cout << "----------------------------------------\n";
                 
                 while(true) {
                     cout << "\nWhat would you like to edit?\n";
@@ -228,10 +312,15 @@ public:
                             cin.ignore();
                             
                             string priorityStr;
-                            if(priority == 1) priorityStr = "High";
+                            if(priority == 1)      priorityStr = "High";
                             else if(priority == 2) priorityStr = "Mid";
                             else if(priority == 3) priorityStr = "Low";
-                            tasks[i].setPriority(priorityStr, priority == 1 ? 1 : 0, priority == 2 ? 1 : 0, priority == 3 ? 1 : 0);
+                            tasks[i].setPriority(
+                                priorityStr,
+                                priority == 1 ? 1 : 0,
+                                priority == 2 ? 1 : 0,
+                                priority == 3 ? 1 : 0
+                            );
                             cout << "\n===========================\n";
                             cout << "\nPriority updated successfully!\n";
                             cout << "===========================\n";
@@ -251,13 +340,25 @@ public:
         cout << "===========================\n";
     }
 
-    // Delete Task
     void deleteTask(int id) {
+        cout << "\n========================================\n";
+        cout << "               DELETE TASK              \n";
+        cout << "========================================\n";
+        cout << "Task ID: " << id << "\n";
+        cout << "----------------------------------------\n";
+
         for (int i = 0; i < taskCount; i++) {
             if (tasks[i].taskID == id) {
+                if (tasks[i].getOwner() != username) {
+                    cout << "\n===================================\n";
+                    cout << "ERROR: You can only delete your own tasks!\n";
+                    cout << "===================================\n";
+                    return;
+                }
 
                 for (int j = i; j < taskCount - 1; j++) {
                     tasks[j] = tasks[j + 1];
+                    tasks[j].taskID = j + 1;
                 }
 
                 taskCount--;
@@ -272,7 +373,6 @@ public:
         cout << "===========================\n";
     }
 
-    // View Tasks
     void viewTasks() {
         if (taskCount == 0) {
             cout << "\n===========================\n";
@@ -283,7 +383,11 @@ public:
             cin.get();
             return;
         }
-        cout << "\n===========================\n";
+
+        cout << "\n========================================\n";
+        cout << "               VIEW TASKS                 \n";
+        cout << "========================================\n";
+
         cout << "\n1) View All Tasks\n";
         cout << "2) View Tasks by Priority\n";
         cout << "3) View Tasks by Status\n";
@@ -294,17 +398,52 @@ public:
         int choice;
         cin >> choice;
         cin.ignore();
-        cout << "\n===========================\n";
+        cout << "\n========================================\n";
+
         switch(choice) {
             case 0:
                 return;
-            case 1:
+
+            case 1: {
+                cout << "\n================================== TASK LIST ===================================\n\n";
+                cout << left
+                     << setw(5)  << "ID"
+                     << setw(20) << "Title"
+                     << setw(15) << "Status"
+                     << setw(15) << "Due Date"
+                     << setw(15) << "Assigned To"
+                     << setw(10) << "Priority" << '\n';
+                cout << string(80, '-') << '\n';
+
                 for (int i = 0; i < taskCount; i++) {
-                    cout << tasks[i];
+                    string statusText;
+                    switch (tasks[i].status) {
+                        case 1: statusText = "Pending";     break;
+                        case 2: statusText = "In Progress"; break;
+                        case 3: statusText = "Completed";   break;
+                        default: statusText = "Unknown";    break;
+                    }
+
+                    string dueDate = to_string(tasks[i].dueDayDate) + "/" +
+                                     to_string(tasks[i].dueMonthDate) + "/" +
+                                     to_string(tasks[i].dueYearDate);
+
+                    cout << left
+                         << setw(5)  << tasks[i].taskID
+                         << setw(20) << tasks[i].title
+                         << setw(15) << statusText
+                         << setw(15) << dueDate
+                         << setw(15) << tasks[i].assignedTo
+                         << setw(10) << tasks[i].priority
+                         << '\n';
                 }
+
+                cout << "\n================================================================================\n";
                 cout << "\nPress Enter to return";
                 cin.get();
                 break;
+            }
+
             case 2: {
                 int priorityChoice;
                 cout << "Select Priority to filter:\n";
@@ -340,6 +479,7 @@ public:
                 cin.get();
                 break;
             }
+
             case 3: {
                 int statusFilter;
                 cout << "Enter Status to filter:\n";
@@ -359,7 +499,8 @@ public:
                 }
                 
                 if(foundCount == 0) {
-                    string statusName = (statusFilter == 1) ? "Pending" : (statusFilter == 2) ? "In Progress" : "Completed";
+                    string statusName = (statusFilter == 1) ? "Pending" :
+                                        (statusFilter == 2) ? "In Progress" : "Completed";
                     cout << "\nNo tasks found with status: " << statusName << endl;
                 }
                 
@@ -367,6 +508,7 @@ public:
                 cin.get();
                 break;
             }
+
             case 4: {
                 string userFilter;
                 cout << "Enter Assigned User to filter: ";
@@ -388,6 +530,7 @@ public:
                 cin.get();
                 break;
             }
+
             case 5: {
                 int day, month, year;
                 char slash;
@@ -397,20 +540,24 @@ public:
                 
                 int foundCount = 0;
                 for (int i = 0; i < taskCount; i++) {
-                    if (tasks[i].getDueDay() == day && tasks[i].getDueMonth() == month && tasks[i].getDueYear() == year) {
+                    if (tasks[i].getDueDay() == day &&
+                        tasks[i].getDueMonth() == month &&
+                        tasks[i].getDueYear() == year) {
                         cout << tasks[i];
                         foundCount++;
                     }
                 }
                 
                 if(foundCount == 0) {
-                    cout << "\nNo tasks found with deadline: " << day << "/" << month << "/" << year << endl;
+                    cout << "\nNo tasks found with deadline: "
+                         << day << "/" << month << "/" << year << endl;
                 }
                 
                 cout << "\nPress Enter to return";
                 cin.get();
                 break;
             }
+
             default:
                 cout << "Invalid choice. Returning to main menu.\n";
                 break;
@@ -418,35 +565,28 @@ public:
     }
 };
 
-
-// Utility Functions for Task Input
-
-// Function to get title with go back support
-bool getTitle(string& title) {
+inline bool getTitle(string& title) {
     cout << "\nEnter Task Title: ";
     getline(cin, title);
     if(title == "0") return false;
     return true;
 }
 
-// Function to get description with go back support
-bool getDescription(string& description) {
+inline bool getDescription(string& description) {
     cout << "\nEnter Task Description: ";
     getline(cin, description);
     if(description == "0") return false;
     return true;
 }
 
-// Function to get assigned to with go back support
-bool getAssignedTo(string& assignedTo) {
+inline bool getAssignedTo(string& assignedTo) {
     cout << "\nEnter Assigned To: ";
     getline(cin, assignedTo);
     if(assignedTo == "0") return false;
     return true;
 }
 
-// Function to get status with validation and go back support
-bool getStatus(int& status) {
+inline bool getStatus(int& status) {
     while(true) {
         cout << "\nEnter Task Status: \n";
         cout << "1) Pending\n";
@@ -465,18 +605,15 @@ bool getStatus(int& status) {
     }
 }
 
-// Function to get valid date with validation and go back support
-bool getValidDate(int& day, int& month, int& year) {
+inline bool getValidDate(int& day, int& month, int& year) {
     char slash;
     
     while(true) {
         cout << "\nEnter Due Date (DD/MM/YYYY): ";
         cin >> day >> slash >> month >> slash >> year;
         
-        // Check for go back
         if(day == 0) return false;
         
-        // Validate day range
         if(day < 1 || day > 31) {
             cout << "\n===================================\n";
             cout << "ERROR: INVALID DAY. Please enter a valid day (1-31).\n";
@@ -484,7 +621,6 @@ bool getValidDate(int& day, int& month, int& year) {
             continue;
         }
         
-        // Validate month range
         if(month < 1 || month > 12) {
             cout << "\n===================================\n";
             cout << "ERROR: INVALID MONTH. Please enter a valid month (1-12).\n";
@@ -492,7 +628,6 @@ bool getValidDate(int& day, int& month, int& year) {
             continue;
         }
         
-        // Validate year
         if(year < 2025) {
             cout << "\n===================================\n";
             cout << "ERROR: INVALID YEAR. Must be 2025 or later.\n";
@@ -500,9 +635,9 @@ bool getValidDate(int& day, int& month, int& year) {
             continue;
         }
         
-        // Check if day is valid for the selected month
         bool dayValid = false;
-        if(month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12) {
+        if(month == 1 || month == 3 || month == 5 || month == 7 ||
+           month == 8 || month == 10 || month == 12) {
             dayValid = (day >= 1 && day <= 31);
         }
         else if(month == 4 || month == 6 || month == 9 || month == 11) {
@@ -519,13 +654,11 @@ bool getValidDate(int& day, int& month, int& year) {
             continue;
         }
         
-        // All validations passed
         return true;
     }   
 }
 
-// Function to get priority with validation and go back support
-bool getPriority(int& priority) {
+inline bool getPriority(int& priority) {
     while(true) {
         cout << "\nEnter Priority: \n";
         cout << "1) High\n";
@@ -544,8 +677,7 @@ bool getPriority(int& priority) {
     }
 }
 
-// Function to display task
-void displayTask(const string& title, const string& description, const string& assignedTo,
+inline void displayTask(const string& title, const string& description, const string& assignedTo,
                  int status, int day, int month, int year, int priority) {
     cout << "\n=====================================\n";
     cout << "----- Task Created Successfully -----\n";
@@ -565,37 +697,30 @@ void displayTask(const string& title, const string& description, const string& a
     cout << "\n===================================\n";
 }
 
-// Function to create a task
-bool createTask(string& title, string& description, string& assignedTo,
+inline bool createTask(string& title, string& description, string& assignedTo,
                 int& status, int& day, int& month, int& year, int& priority) {
     cin.ignore();
     
-    // Get title
     if(!getTitle(title)) return false;
     
-    // Get description
     if(!getDescription(description)) {
         return createTask(title, description, assignedTo, status, day, month, year, priority);
     }
     
-    // Get assigned to
     if(!getAssignedTo(assignedTo)) {
         return createTask(title, description, assignedTo, status, day, month, year, priority);
     }
     
-    // Get status
     if(!getStatus(status)) {
         cin.ignore();
         return createTask(title, description, assignedTo, status, day, month, year, priority);
     }
     
-    // Get date
     if(!getValidDate(day, month, year)) {
         cin.ignore();
         return createTask(title, description, assignedTo, status, day, month, year, priority);
     }
     
-    // Get priority
     if(!getPriority(priority)) {
         cin.ignore();
         return createTask(title, description, assignedTo, status, day, month, year, priority);
@@ -604,8 +729,7 @@ bool createTask(string& title, string& description, string& assignedTo,
     return true;
 }
 
-// Function to edit task
-bool editTask(string& title, string& description, string& assignedTo,
+inline bool editTask(string& title, string& description, string& assignedTo,
               int& status, int& day, int& month, int& year, int& priority) {
     while(true) {
         cout << "\nWhat would you like to edit?\n";
@@ -659,3 +783,5 @@ bool editTask(string& title, string& description, string& assignedTo,
         }
     }
 }
+
+#endif
