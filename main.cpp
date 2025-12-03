@@ -2,113 +2,147 @@
 #include <string>
 #include "TaskManager.h"
 #include "TaskID.h"
+#include "User.h"
 
 using namespace std;
 
 int main(){
-    // User input
-    string title = "", username = "", password = "", description = "", assignedTo = "";
-    int status = 0, dueDayDate = 0, dueMonthDate = 0, dueYearDate = 0, priority = 0, choice = 0;
-
-    // Input
+    // Array to store registered users
+    User* users[100];
+    int userCount = 0;
+    
+    string username = "", password = "";
+    int choice = 0;
+    bool exitProgram = false;
 
     cout << "============================\n";
     cout << "------- Task Manager -------\n";
     cout << "============================\n";
     cout << "\nWelcome to the Task Manager!\n";
-    cout << "Please login to continue.\n";
-    cout << "\nEnter 0 to exit.\n";
 
-    
-    // Username input
-    cout << "\nEnter Username: ";
-    getline(cin, username);
-    cout << "Enter Password: ";
-    getline(cin, password);
-    cout << "\n===========================\n";
-    cout << "\nLogin Successful!\n";
-    cout << "\nWelcome, " << username << "!\n";
-
-
-    // Main menu
-    TaskManager tm(username, password);
-    tm.mainMenu();
-    cout << "0) Exit\n";
-    cout << "Your choice: ";
-    cin >> choice;
-    if(choice == 0) return 0;
-    else if (choice == 1) {
-        cout << "\n===========================\n";
-        cout << "Redirecting to Add Task...\n";
-        cout << "===========================\n";
+    // Main program loop
+    while (!exitProgram) {
+        bool loggedIn = false;
         
-    } else if(choice == 2) {
-        cout << "\n===========================\n";
-        cout << "Redirecting to View Tasks...\n";
-        cout << "===========================\n";
-        TaskManager tm(username, password);
-        tm.viewTasks();
-        return 0;
-    } else if(choice == 3) {
-        int editID;
-        cout << "\n===========================\n";
-        cout << "Enter Task ID to edit: ";
-        cin >> editID;
-        cout << "Redirecting to Edit Task...\n";
-        cout << "===========================\n";
-        TaskManager tm(username, password);
-        tm.editTask(editID);
-        return 0;
-    } else if(choice == 4) {
-        int deleteID;
-        cout << "\n===========================\n";
-        cout << "Enter Task ID to delete: ";
-        cin >> deleteID;
-        cout << "Redirecting to Delete Task...\n";
-        cout << "===========================\n";
-        TaskManager tm(username, password);
-        tm.deleteTask(deleteID);
-        return 0;
-    } else {
-        cout << "Invalid choice. Exiting.\n";
-        return 0;
-    }
+        // Login/Signup loop
+        while (!loggedIn && !exitProgram) {
+            cout << "\nPlease select an option:\n";
+            cout << "1) Login\n";
+            cout << "2) Signup\n";
+            cout << "0) Exit\n";
+            cout << "Your choice: ";
+            cin >> choice;
+            cin.ignore();
+            
+            if(choice == 0) {
+                exitProgram = true;
+                break;
+            }
+            else if(choice == 2) {
+                // Signup
+                cout << "\n===========================\n";
+                cout << "--------- Sign Up ---------\n";
+                cout << "===========================\n";
+                
+                cout << "\nEnter New Username: ";
+                cin >> username;
+                
+                // Check if username already exists
+                bool userExists = false;
+                for(int i = 0; i < userCount; i++) {
+                    if(users[i]->getUsername() == username) {
+                        userExists = true;
+                        break;
+                    }
+                }
+                
+                if(userExists) {
+                    cout << "\n===========================\n";
+                    cout << "ERROR: Username already exists!\n";
+                    cout << "===========================\n";
+                    continue;
+                }
+                
+                cout << "Enter New Password: ";
+                cin >> password;
+                
+                // Validate password (minimum 4 characters)
+                if(password.length() < 4) {
+                    cout << "\n===========================\n";
+                    cout << "ERROR: Password must be at least 4 characters!\n";
+                    cout << "===========================\n";
+                    continue;
+                }
+                
+                // Create new user
+                users[userCount] = new User(username, password);
+                userCount++;
+                
+                cout << "\n===========================\n";
+                cout << "Signup Successful!\n";
+                cout << "Welcome, " << username << "!\n";
+                cout << "===========================\n";
+                loggedIn = true;
+            }
+            else if(choice == 1) {
+                // Login
+                cout << "\n===========================\n";
+                cout << "---------- Login ----------\n";
+                cout << "===========================\n";
+                
+                if(userCount == 0) {
+                    cout << "\n===========================\n";
+                    cout << "No users registered. Please sign up first.\n";
+                    cout << "===========================\n";
+                    continue;
+                }
+                
+                cout << "\nEnter Username: ";
+                getline(cin, username);
+                cout << "Enter Password: ";
+                getline(cin, password);
+                
+                // Check credentials
+                bool validLogin = false;
+                for(int i = 0; i < userCount; i++) {
+                    if(users[i]->login(username, password)) {
+                        validLogin = true;
+                        break;
+                    }
+                }
+                
+                if(validLogin) {
+                    cout << "\n===========================\n";
+                    cout << "Login Successful!\n";
+                    cout << "Welcome back, " << username << "!\n";
+                    cout << "===========================\n";
+                    loggedIn = true;
+                } else {
+                    cout << "\n===========================\n";
+                    cout << "ERROR: Invalid username or password!\n";
+                    cout << "===========================\n";
+                }
+            }
+            else {
+                cout << "\n===========================\n";
+                cout << "Invalid choice. Please try again.\n";
+                cout << "===========================\n";
+            }
+        }
         
-    
-    // Add Task
-    cout << "\n===========================\n";
-    cout << "----- Create New Task -----\n";
-    cout << "===========================\n";
-    
-    // Create task using functions
-    if(!createTask(title, description, assignedTo, status, dueDayDate, dueMonthDate, dueYearDate, priority)) {
-        return 0;
+        // Main menu - only run if logged in
+        if(loggedIn) {
+            TaskManager tm(username, password);
+            tm.mainMenu();
+            // After logout, loop back to login screen
+        }
     }
     
-    // Display the created task
-    displayTask(title, description, assignedTo, status, dueDayDate, dueMonthDate, dueYearDate, priority);
-    
-    // Post-creation menu
-    cout << "\nWhat would you like to do?\n";
-    cout << "1) Edit This Task\n";
-    cout << "2) Return to Main Menu\n";
-    cout << "0) Exit\n";
-    cout << "Your choice: ";
-    cin >> choice;
-    
-    if(choice == 1) {
-        cout << "\n===========================\n";
-        cout << "Redirecting to Edit Task...\n";
-        cout << "===========================\n";
-        editTask(title, description, assignedTo, status, dueDayDate, dueMonthDate, dueYearDate, priority);
-    } else if(choice == 2) {
-        cout << "\n===========================\n";
-        cout << "Returning to Main Menu...\n";
-        cout << "===========================\n";
-
-    } else {
-        cout << "Exiting...\n";
+    // Clean up dynamic memory
+    for(int i = 0; i < userCount; i++) {
+        delete users[i];
     }
     
+    cout << "\nThank you for using Task Manager!\n";
     return 0;    
 }
