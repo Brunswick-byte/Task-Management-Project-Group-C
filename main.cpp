@@ -1,15 +1,18 @@
 #include <iostream>
 #include <string>
-#include "TaskManager.h"
+using namespace std;
 #include "TaskID.h"
 #include "User.h"
-
-using namespace std;
+#include "TaskManager.h"
 
 int main(){
-    // Array to store registered users
     User* users[100];
     int userCount = 0;
+    
+    userCount = loadUsers(users);
+    if (userCount > 0) {
+        cout << "Loaded " << userCount << " user(s) from file.\n";
+    }
     
     string username = "", password = "";
     int choice = 0;
@@ -20,11 +23,9 @@ int main(){
     cout << "============================\n";
     cout << "\nWelcome to the Task Manager!\n";
 
-    // Main program loop
     while (!exitProgram) {
         bool loggedIn = false;
         
-        // Login/Signup loop
         while (!loggedIn && !exitProgram) {
             cout << "\nPlease select an option:\n";
             cout << "1) Login\n";
@@ -39,15 +40,13 @@ int main(){
                 break;
             }
             else if(choice == 2) {
-                // Signup
                 cout << "\n===========================\n";
                 cout << "--------- Sign Up ---------\n";
                 cout << "===========================\n";
                 
                 cout << "\nEnter New Username: ";
-                cin >> username;
+                getline(cin, username);
                 
-                // Check if username already exists
                 bool userExists = false;
                 for(int i = 0; i < userCount; i++) {
                     if(users[i]->getUsername() == username) {
@@ -64,9 +63,8 @@ int main(){
                 }
                 
                 cout << "Enter New Password: ";
-                cin >> password;
+                getline(cin, password);
                 
-                // Validate password (minimum 4 characters)
                 if(password.length() < 4) {
                     cout << "\n===========================\n";
                     cout << "ERROR: Password must be at least 4 characters!\n";
@@ -74,9 +72,10 @@ int main(){
                     continue;
                 }
                 
-                // Create new user
                 users[userCount] = new User(username, password);
                 userCount++;
+                
+                saveUsers(users, userCount);
                 
                 cout << "\n===========================\n";
                 cout << "Signup Successful!\n";
@@ -85,7 +84,6 @@ int main(){
                 loggedIn = true;
             }
             else if(choice == 1) {
-                // Login
                 cout << "\n===========================\n";
                 cout << "---------- Login ----------\n";
                 cout << "===========================\n";
@@ -102,7 +100,6 @@ int main(){
                 cout << "Enter Password: ";
                 getline(cin, password);
                 
-                // Check credentials
                 bool validLogin = false;
                 for(int i = 0; i < userCount; i++) {
                     if(users[i]->login(username, password)) {
@@ -130,19 +127,19 @@ int main(){
             }
         }
         
-        // Main menu - only run if logged in
         if(loggedIn) {
             TaskManager tm(username, password);
             tm.mainMenu();
-            // After logout, loop back to login screen
         }
     }
     
-    // Clean up dynamic memory
+    saveUsers(users, userCount);
+    
     for(int i = 0; i < userCount; i++) {
         delete users[i];
     }
     
     cout << "\nThank you for using Task Manager!\n";
+    cout << "All data has been saved.\n";
     return 0;    
 }
