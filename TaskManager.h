@@ -273,15 +273,86 @@ public:
             cin.get();
             return;
         }
-
-        cout << "\n======= ALL TASKS =======\n";
-        for (int i = 0; i < taskCount; i++) {
-            cout << tasks[i];
-        }
-        cout << "=========================\n";
-        cout << "\nPress Enter to return";
+        cout << "\n1) View All Tasks\n";
+        cout << "2) View Tasks by Priority\n";
+        cout << "3) View Tasks by Status\n";
+        cout << "4) View Tasks by Assigned User\n";
+        cout << "5) View Tasks by Deadline\n";
+        cout << "0) Return to Main Menu\n";
+        cout << "Your choice: ";
+        int choice;
+        cin >> choice;
         cin.ignore();
-        cin.get();
+        cout << "\n===========================\n";
+        switch(choice) {
+            case 0:
+                return;
+            case 1:
+                for (int i = 0; i < taskCount; i++) {
+                    cout << tasks[i];
+                }
+                cout << "\nPress Enter to return";
+                cin.get();
+                break;
+            case 2: {
+                string priorityFilter;
+                cout << "Enter Priority to filter (High/Mid/Low): ";
+                getline(cin, priorityFilter);
+                for (int i = 0; i < taskCount; i++) {
+                    if (tasks[i].getPriority() == priorityFilter) {
+                        cout << tasks[i];
+                    }
+                }
+                cout << "\nPress Enter to return";
+                cin.get();
+                break;
+            }
+            case 3: {
+                int statusFilter;
+                cout << "Enter Status to filter (1: Pending, 2: In Progress, 3: Completed): ";
+                cin >> statusFilter;
+                cin.ignore();
+                for (int i = 0; i < taskCount; i++) {
+                    if (tasks[i].getStatus() == statusFilter) {
+                        cout << tasks[i];
+                    }
+                }
+                cout << "\nPress Enter to return";
+                cin.get();
+                break;
+            }
+            case 4: {
+                string userFilter;
+                cout << "Enter Assigned User to filter: ";
+                getline(cin, userFilter);
+                for (int i = 0; i < taskCount; i++) {
+                    if (tasks[i].getAssignedTo() == userFilter) {
+                        cout << tasks[i];
+                    }
+                }
+                cout << "\nPress Enter to return";
+                cin.get();
+                break;
+            }
+            case 5: {
+                int day, month, year;
+                char slash;
+                cout << "Enter Deadline to filter (DD/MM/YYYY): ";
+                cin >> day >> slash >> month >> slash >> year;
+                cin.ignore();
+                for (int i = 0; i < taskCount; i++) {
+                    if (tasks[i].getDueDay() == day && tasks[i].getDueMonth() == month && tasks[i].getDueYear() == year) {
+                        cout << tasks[i];
+                    }
+                }
+                cout << "\nPress Enter to return";
+                cin.get();
+                break;
+            }
+            default:
+                cout << "Invalid choice. Returning to main menu.\n";
+                break;
+        }
     }
 };
 
