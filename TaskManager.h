@@ -306,28 +306,63 @@ public:
                 cin.get();
                 break;
             case 2: {
+                int priorityChoice;
+                cout << "Select Priority to filter:\n";
+                cout << "1) High\n";
+                cout << "2) Mid\n";
+                cout << "3) Low\n";
+                cout << "Your choice: ";
+                cin >> priorityChoice;
+                cin.ignore();
+                
                 string priorityFilter;
-                cout << "Enter Priority to filter (High/Mid/Low): ";
-                getline(cin, priorityFilter);
+                if(priorityChoice == 1) priorityFilter = "High";
+                else if(priorityChoice == 2) priorityFilter = "Mid";
+                else if(priorityChoice == 3) priorityFilter = "Low";
+                else {
+                    cout << "Invalid choice.\n";
+                    break;
+                }
+                
+                int foundCount = 0;
                 for (int i = 0; i < taskCount; i++) {
                     if (tasks[i].getPriority() == priorityFilter) {
                         cout << tasks[i];
+                        foundCount++;
                     }
                 }
+                
+                if(foundCount == 0) {
+                    cout << "\nNo tasks found with priority: " << priorityFilter << endl;
+                }
+                
                 cout << "\nPress Enter to return";
                 cin.get();
                 break;
             }
             case 3: {
                 int statusFilter;
-                cout << "Enter Status to filter (1: Pending, 2: In Progress, 3: Completed): ";
+                cout << "Enter Status to filter:\n";
+                cout << "1) Pending\n";
+                cout << "2) In Progress\n";
+                cout << "3) Completed\n";
+                cout << "Your choice: ";
                 cin >> statusFilter;
                 cin.ignore();
+                
+                int foundCount = 0;
                 for (int i = 0; i < taskCount; i++) {
                     if (tasks[i].getStatus() == statusFilter) {
                         cout << tasks[i];
+                        foundCount++;
                     }
                 }
+                
+                if(foundCount == 0) {
+                    string statusName = (statusFilter == 1) ? "Pending" : (statusFilter == 2) ? "In Progress" : "Completed";
+                    cout << "\nNo tasks found with status: " << statusName << endl;
+                }
+                
                 cout << "\nPress Enter to return";
                 cin.get();
                 break;
@@ -336,11 +371,19 @@ public:
                 string userFilter;
                 cout << "Enter Assigned User to filter: ";
                 getline(cin, userFilter);
+                
+                int foundCount = 0;
                 for (int i = 0; i < taskCount; i++) {
                     if (tasks[i].getAssignedTo() == userFilter) {
                         cout << tasks[i];
+                        foundCount++;
                     }
                 }
+                
+                if(foundCount == 0) {
+                    cout << "\nNo tasks found assigned to: " << userFilter << endl;
+                }
+                
                 cout << "\nPress Enter to return";
                 cin.get();
                 break;
@@ -351,11 +394,19 @@ public:
                 cout << "Enter Deadline to filter (DD/MM/YYYY): ";
                 cin >> day >> slash >> month >> slash >> year;
                 cin.ignore();
+                
+                int foundCount = 0;
                 for (int i = 0; i < taskCount; i++) {
                     if (tasks[i].getDueDay() == day && tasks[i].getDueMonth() == month && tasks[i].getDueYear() == year) {
                         cout << tasks[i];
+                        foundCount++;
                     }
                 }
+                
+                if(foundCount == 0) {
+                    cout << "\nNo tasks found with deadline: " << day << "/" << month << "/" << year << endl;
+                }
+                
                 cout << "\nPress Enter to return";
                 cin.get();
                 break;
