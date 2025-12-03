@@ -1,32 +1,80 @@
+#ifndef USER_H
+#define USER_H
+
 #include <iostream>
+#include <fstream>
+#include <string>
 using namespace std;
 
 class User {
-    private:
-        string username;
-        string password;
-    public:
-        User(string n, string p){
-            username = n;
-            password = p;
-        }
+private:
+    string username;
+    string password;
+    
+public:
+    User() : username(""), password("") {}
+    
+    User(string n, string p){
+        username = n;
+        password = p;
+    }
 
-        // Getters
-        string getUsername(){return username;}
-        string getPassword(){return password;}
+    string getUsername(){return username;}
+    string getPassword(){return password;}
 
-        // Setters
-        void setUsername(string n){username = n;}
-        void setPassword(string p){password = p;}
+    void setUsername(string n){username = n;}
+    void setPassword(string p){password = p;}
 
-        // Create account
-        void createAccount(){
-            cout << "Creating account for " << username << endl;
-            // Additional logic for account creation
-        }
+    void serialize(ofstream& out) {
+        out << username << endl;
+        out << password << endl;
+    }
 
-        // Login
-        bool login(string n, string p){
-            return (n == username && p == password);
-        }
+    void deserialize(ifstream& in) {
+        getline(in, username);
+        getline(in, password);
+    }
+
+    void createAccount(){
+        cout << "Creating account for " << username << endl;
+    }
+
+    bool login(string n, string p){
+        return (n == username && p == password);
+    }
 };
+
+inline void saveUsers(User** users, int userCount) {
+    ofstream outFile("users.txt");
+    if (!outFile) {
+        cout << "Error: Could not save users to file!\n";
+        return;
+    }
+    
+    outFile << userCount << endl;
+    for (int i = 0; i < userCount; i++) {
+        users[i]->serialize(outFile);
+    }
+    outFile.close();
+}
+
+inline int loadUsers(User** users) {
+    ifstream inFile("users.txt");
+    if (!inFile) {
+        return 0;
+    }
+    
+    int userCount;
+    inFile >> userCount;
+    inFile.ignore();
+    
+    for (int i = 0; i < userCount; i++) {
+        users[i] = new User();
+        users[i]->deserialize(inFile);
+    }
+    
+    inFile.close();
+    return userCount;
+}
+
+#endif
