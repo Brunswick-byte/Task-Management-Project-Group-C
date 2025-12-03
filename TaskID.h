@@ -64,7 +64,6 @@ ostream& operator<<(ostream& os, const TaskID& t) {
     os << "\n----- Task Details -----\n";
     os << "Task ID: " << t.taskID << endl;
     os << "Title: " << t.title << endl;
-    os << "Description: " << t.description << endl;
     os << "Priority: " << t.priority << endl;
     os << "-------------------------\n";
     return os;
